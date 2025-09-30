@@ -10,6 +10,7 @@ from turbopuffer_client import TurbopufferClient
 from embedding_client import EmbeddingClient
 from filter_builder import FilterBuilder
 from reranker import Reranker
+from enhanced_reranker import EnhancedReranker
 from evaluation_client import EvaluationClient
 
 load_dotenv()
@@ -21,6 +22,7 @@ class SearchPipeline:
     def __init__(
         self,
         use_reranking: bool = True,
+        use_enhanced_reranker: bool = True,
         initial_k: int = 100,
         final_k: int = 10
     ):
@@ -29,6 +31,7 @@ class SearchPipeline:
 
         Args:
             use_reranking: Whether to use re-ranking (default: True)
+            use_enhanced_reranker: Whether to use enhanced reranker (default: True)
             initial_k: Number of candidates to retrieve initially
             final_k: Number of final candidates to return
         """
@@ -36,11 +39,15 @@ class SearchPipeline:
         self.embedding_client = EmbeddingClient()
         self.filter_builder = FilterBuilder()
         self.use_reranking = use_reranking
+        self.use_enhanced_reranker = use_enhanced_reranker
         self.initial_k = initial_k
         self.final_k = final_k
 
         if use_reranking:
-            self.reranker = Reranker()
+            if use_enhanced_reranker:
+                self.reranker = EnhancedReranker()
+            else:
+                self.reranker = Reranker()
 
     def load_query_config(self, config_path: str) -> Dict[str, Any]:
         """
@@ -106,12 +113,21 @@ class SearchPipeline:
 
         # Step 4: Re-rank if enabled
         if self.use_reranking and len(results) > 1:
-            print(f"  → Re-ranking with cross-encoder...")
-            results = self.reranker.rerank(
-                query=query_text,
-                candidates=results,
-                soft_criteria=soft_criteria
-            )
+            if self.use_enhanced_reranker:
+                print(f"  → Re-ranking with enhanced reranker (hard + soft criteria)...")
+                results = self.reranker.rerank(
+                    query=query_text,
+                    candidates=results,
+                    hard_criteria=hard_criteria,
+                    soft_criteria=soft_criteria
+                )
+            else:
+                print(f"  → Re-ranking with cross-encoder...")
+                results = self.reranker.rerank(
+                    query=query_text,
+                    candidates=results,
+                    soft_criteria=soft_criteria
+                )
             print(f"     Re-ranked {len(results)} candidates")
 
         # Step 5: Return top-k
