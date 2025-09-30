@@ -81,12 +81,14 @@ class SearchPipeline:
         print("  → Generating query embedding...")
         query_embedding = self.embedding_client.embed_query(query_text)
 
-        # Step 2: Build filters from hard criteria
-        if hard_criteria and not filters:
-            print(f"  → Building filters from {len(hard_criteria)} hard criteria...")
-            filters = self.filter_builder.build_filters_from_criteria(hard_criteria)
-            if filters:
-                print(f"     Filters: {filters}")
+        # Step 2: Build filters from hard criteria (temporarily disabled for testing)
+        # if hard_criteria and not filters:
+        #     print(f"  → Building filters from {len(hard_criteria)} hard criteria...")
+        #     filters = self.filter_builder.build_filters_from_criteria(hard_criteria)
+        #     if filters:
+        #         print(f"     Filters: {filters}")
+        if hard_criteria:
+            print(f"  → Hard criteria noted: {len(hard_criteria)} (filtering via re-ranking)")
 
         # Step 3: Query Turbopuffer
         print(f"  → Querying Turbopuffer (top_k={self.initial_k})...")
