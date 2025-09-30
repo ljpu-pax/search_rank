@@ -30,7 +30,7 @@ class TurbopufferClient:
         vector: List[float],
         top_k: int = 100,
         filters: Optional[Dict[str, Any]] = None,
-        include_attributes: bool = True,
+        include_attributes: Optional[List[str]] = None,
     ) -> List[Dict[str, Any]]:
         """
         Query the Turbopuffer collection with a vector and optional filters.
@@ -39,11 +39,20 @@ class TurbopufferClient:
             vector: Query embedding vector (1024 dims from voyage-3)
             top_k: Number of results to return
             filters: Metadata filters to apply
-            include_attributes: Whether to include attributes in response
+            include_attributes: List of attribute names to include
 
         Returns:
             List of matching candidate profiles
         """
+        # Default attributes to include
+        if include_attributes is None:
+            include_attributes = [
+                "name", "email", "country", "rerankSummary",
+                "education", "experience",
+                "deg_degrees", "deg_schools", "deg_fos",
+                "exp_titles", "exp_companies", "exp_years"
+            ]
+
         query_params = {
             "rank_by": ("vector", "ANN", vector),
             "top_k": top_k,
@@ -64,14 +73,24 @@ class TurbopufferClient:
         """Format Turbopuffer results into a consistent structure."""
         formatted = []
 
-        # Turbopuffer returns result.rows with id, dist, and attributes
+        # Turbopuffer returns result.rows with id and attributes directly on the row
         if hasattr(result, 'rows'):
             for row in result.rows:
+                # Get the full row as a dict
+                row_dict = row.model_dump()
+
+                # Extract ID and distance
                 formatted_result = {
                     "_id": row.id,
-                    "distance": row.dist if hasattr(row, 'dist') else None,
-                    "attributes": row.attributes if hasattr(row, 'attributes') else {}
+                    "distance": row_dict.get("$dist"),
+                    "attributes": {}
                 }
+
+                # Put all other attributes in the attributes dict
+                for key, value in row_dict.items():
+                    if key not in ["id", "$dist", "vector"]:
+                        formatted_result["attributes"][key] = value
+
                 formatted.append(formatted_result)
 
         return formatted

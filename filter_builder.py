@@ -34,7 +34,7 @@ class FilterBuilder:
         return None
 
     @staticmethod
-    def build_degree_filter(degrees: List[str]) -> Dict[str, Any]:
+    def build_degree_filter(degrees: List[str]) -> List[Any]:
         """
         Build filter for degree requirements.
 
@@ -42,7 +42,7 @@ class FilterBuilder:
             degrees: List of degree types (e.g., ["jd", "master's"])
 
         Returns:
-            Turbopuffer filter dict
+            Turbopuffer filter list
         """
         # Normalize degree names to match schema
         normalized = []
@@ -61,11 +61,12 @@ class FilterBuilder:
             else:
                 normalized.append(deg_lower)
 
+        # Turbopuffer filter format: [field, operator, value]
         if len(normalized) == 1:
-            return {"deg_degrees": ["Contains", normalized[0]]}
+            return ["deg_degrees", "Glob", f"*{normalized[0]}*"]
         else:
-            # Multiple degrees - need OR logic
-            return {"deg_degrees": ["In", normalized]}
+            # Multiple degrees - use OR with multiple filters
+            return ["Or", [[f"deg_degrees", "Glob", f"*{deg}*"] for deg in normalized]]
 
     @staticmethod
     def build_field_of_study_filter(fields: List[str]) -> Dict[str, Any]:
