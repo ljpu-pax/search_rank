@@ -1,0 +1,8 @@
+turbopuffer
+voyageai
+openai
+requests
+pydantic
+python-dotenv
+pyyaml
+sentence-transformers
